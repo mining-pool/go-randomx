@@ -1,6 +1,9 @@
 package randomx
 
 import "C"
+import (
+	"sync"
+)
 
 func NewRxDataset(flags ...Flag) *RxDataset {
 	dataset := AllocDataset(flags...)
@@ -23,23 +26,23 @@ func (ds *RxDataset) Close() {
 func (ds *RxDataset) Init(seed []byte, workerNum uint32) bool {
 	ds.cache.Init(seed)
 
-	if ds.cache == nil {
+	if ds.cache == nil || ds.cache.cache == nil {
 		return false
 	}
 
 	datasetItemCount := DatasetItemCount()
-	if workerNum > 1 {
+	var wg sync.WaitGroup
 
-		for i := uint32(0); 1 < workerNum; i++ {
-			a := (datasetItemCount * i) / workerNum
-			b := (datasetItemCount * (i + 1)) / workerNum
-			go InitDataset(ds.dataset, ds.cache.cache, a, b-a)
-		}
-
-	} else {
-		InitDataset(ds.dataset, ds.cache.cache, 0, datasetItemCount)
+	for i := uint32(0); i < workerNum; i++ {
+		a := (datasetItemCount * i) / workerNum
+		b := (datasetItemCount * (i + 1)) / workerNum
+		wg.Add(1)
+		go func() {
+			InitDataset(ds.dataset, ds.cache.cache, a, b-a)
+			wg.Done()
+		}()
 	}
-
+	wg.Wait()
 	return true
 }
 

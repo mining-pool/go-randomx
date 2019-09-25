@@ -20,7 +20,7 @@ func (c *RxCache) Init(seed []byte) bool {
 		return false
 	}
 
-	copy(c.seed, seed)
+	c.seed = seed
 	InitCache(c.cache, c.seed)
 
 	c.initCount++
