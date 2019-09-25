@@ -12,16 +12,18 @@ import "C"
 #include "randomx.h"
 */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
 
 type Flag int
 
 var (
-	DEFAULT     Flag = 0
-	LARGE_PAGES Flag = 2
-	HARD_AES    Flag = 2
-	FULL_MEM    Flag = 4
-	JIT         Flag = 8
+	DEFAULT     Flag = 0 // for all default
+	LARGE_PAGES Flag = 1 // for dataset & cache
+	HARD_AES    Flag = 2 // for vm
+	FULL_MEM    Flag = 4 // for vm
+	JIT         Flag = 8 // for vm
 	SECURE      Flag = 16
 )
 
@@ -109,4 +111,19 @@ func CalculateHash(vm *C.randomx_vm, in []byte) (out []byte) {
 	out = make([]byte, C.RANDOMX_HASH_SIZE)
 	C.randomx_calculate_hash(vm, unsafe.Pointer(&in[0]), C.size_t(len(in)), unsafe.Pointer(&out[0]))
 	return
+}
+
+type RxCache struct {
+	seed      []byte
+	cache     *C.randomx_cache
+	initCount uint64
+}
+
+type RxDataset struct {
+	dataset *C.randomx_dataset
+	cache   *RxCache
+}
+
+type RxVM struct {
+	vm *C.randomx_vm
 }
