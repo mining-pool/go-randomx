@@ -2,9 +2,12 @@ package randomx
 
 import "C"
 
-func NewRxVM(dataset *RxDataset, flags ...Flag) *RxVM {
-	vm := CreateVM(dataset.cache.cache, dataset.dataset, flags...)
-	return &RxVM{vm: vm}
+func NewRxVM(rxDataset *RxDataset, flags ...Flag) *RxVM {
+	vm := CreateVM(rxDataset.rxCache.cache, rxDataset.dataset, flags...)
+	return &RxVM{
+		vm:        vm,
+		rxDataset: nil,
+	}
 }
 
 func (vm *RxVM) Close() {
@@ -15,4 +18,9 @@ func (vm *RxVM) Close() {
 
 func (vm *RxVM) CalcHash(in []byte) []byte {
 	return CalculateHash(vm.vm, in)
+}
+
+func (vm *RxVM) UpdateDataset(rxDataset *RxDataset) {
+	SetVMCache(vm.vm, rxDataset.rxCache.cache)
+	SetVMDataset(vm.vm, rxDataset.dataset)
 }

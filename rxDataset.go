@@ -2,16 +2,19 @@ package randomx
 
 import "C"
 import (
+	"log"
 	"sync"
 )
 
 func NewRxDataset(flags ...Flag) *RxDataset {
-	dataset := AllocDataset(flags...)
 	cache := NewRxCache(flags...)
+	dataset := AllocDataset(flags...)
 
 	return &RxDataset{
 		dataset: dataset,
-		cache:   cache,
+		rxCache: cache,
+
+		workerNum: 1,
 	}
 }
 
@@ -20,13 +23,15 @@ func (ds *RxDataset) Close() {
 		ReleaseDataset(ds.dataset)
 	}
 
-	ds.cache.Close()
+	ds.rxCache.Close()
 }
 
 func (ds *RxDataset) Init(seed []byte, workerNum uint32) bool {
-	ds.cache.Init(seed)
+	if ds.rxCache.Init(seed) == false {
+		log.Println("WARN: rxCache has already been initialized by the same seed")
+	}
 
-	if ds.cache == nil || ds.cache.cache == nil {
+	if ds.rxCache == nil || ds.rxCache.cache == nil {
 		return false
 	}
 
@@ -38,7 +43,7 @@ func (ds *RxDataset) Init(seed []byte, workerNum uint32) bool {
 		b := (datasetItemCount * (i + 1)) / workerNum
 		wg.Add(1)
 		go func() {
-			InitDataset(ds.dataset, ds.cache.cache, a, b-a)
+			InitDataset(ds.dataset, ds.rxCache.cache, a, b-a)
 			wg.Done()
 		}()
 	}
