@@ -1,15 +1,71 @@
 package randomx
 
-//go:generate cmake -G "Unix Makefiles" RandomX/
-//go:generate make
+//go:generate git clone https://github.com/tevador/RandomX RandomX/
+//go:generate # If you wanna using other randomx fork, change the https://github.com/tevador/RandomX to another one like https://github.com/loki-project/loki-randomXL
+//go:generate cmake -G "Unix Makefiles" RandomX/ && make
+//go:generate mv librandomx.a lib
 
 //#cgo CFLAGS: -I./randomx
-//#cgo LDFLAGS: -L${SRCDIR}/lib/randomXL -lrandomx
-//#cgo LDFLAGS: -L${SRCDIR}/lib -lstdc++
-//#cgo LDFLAGS: -L${SRCDIR}/lib -lwinpthread
-//#cgo LDFLAGS: -static-libgcc
+//#cgo LDFLAGS: -L${SRCDIR}/lib -lrandomx
+//#cgo LDFLAGS: -lstdc++
+//#cgo LDFLAGS: -static -static-libgcc -static-libstdc++ -lpthread
 /*
 #include "randomx.h"
+#include <time.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+struct arg_struct {
+	randomx_dataset *dataset;
+	randomx_cache *cache;
+	void *seed;
+	uint32_t a, b;
+};
+
+void *init_full_dataset_thread(void *arguments)
+{
+	struct arg_struct *args = arguments;
+	randomx_init_dataset(args->dataset, args->cache, args->a, args->b - args->a);
+	free(arguments);
+	pthread_exit(NULL);
+	return NULL;
+}
+
+void init_full_dataset(randomx_dataset *dataset, randomx_cache *cache, void *seed, uint32_t numThreads)
+{
+    const uint64_t datasetItemCount = randomx_dataset_item_count();
+
+    if (numThreads > 1) {
+		pthread_t threads[numThreads];
+
+        for (uint64_t i = 0; i < numThreads; ++i) {
+            pthread_t thread;
+			threads[i] = thread;
+
+            uint32_t a = (datasetItemCount * i) / numThreads;
+            uint32_t b = (datasetItemCount * (i + 1)) / numThreads;
+
+		    struct arg_struct *args = malloc(sizeof(struct arg_struct));
+		    args->dataset = dataset;
+		    args->cache = cache;
+			args->seed = seed;
+			args->a = a;
+			args->b = b;
+
+			pthread_create(&thread, NULL, &init_full_dataset_thread, (void *)args);
+        }
+
+        for (uint32_t i = 0; i < numThreads; ++i) {
+            pthread_join(threads[i], NULL);
+        }
+    }
+    else {
+        randomx_init_dataset(dataset, cache, 0, datasetItemCount);
+    }
+}
+
 */
 import "C"
 import (
@@ -19,12 +75,12 @@ import (
 type Flag int
 
 var (
-	DEFAULT     Flag = 0 // for all default
-	LARGE_PAGES Flag = 1 // for dataset & rxCache
-	HARD_AES    Flag = 2 // for vm
-	FULL_MEM    Flag = 4 // for vm
-	JIT         Flag = 8 // for vm
-	SECURE      Flag = 16
+	FlagDefault    Flag = 0 // for all default
+	FlagLargePages Flag = 1 // for dataset & rxCache
+	FlagHardAES    Flag = 2 // for vm
+	FlagFullMEM    Flag = 4 // for vm
+	FlagJIT        Flag = 8 // for vm
+	FlagSecure     Flag = 16
 )
 
 func (f Flag) toC() C.randomx_flags {
@@ -32,7 +88,7 @@ func (f Flag) toC() C.randomx_flags {
 }
 
 func AllocCache(flags ...Flag) *C.randomx_cache {
-	var SumFlag Flag = DEFAULT
+	var SumFlag = FlagDefault
 	var cache *C.randomx_cache
 
 	for _, flag := range flags {
@@ -60,7 +116,7 @@ func ReleaseCache(cache *C.randomx_cache) {
 }
 
 func AllocDataset(flags ...Flag) *C.randomx_dataset {
-	var SumFlag Flag = DEFAULT
+	var SumFlag = FlagDefault
 	for _, flag := range flags {
 		SumFlag = SumFlag | flag
 	}
@@ -92,6 +148,19 @@ func InitDataset(dataset *C.randomx_dataset, cache *C.randomx_cache, startItem u
 	C.randomx_init_dataset(dataset, cache, C.ulong(startItem), C.ulong(itemCount))
 }
 
+// FastInitFullDataset using c's pthread to boost the dataset init. 472s -> 466s
+func FastInitFullDataset(dataset *C.randomx_dataset, cache *C.randomx_cache, seed []byte, workerNum uint32) {
+	if dataset == nil {
+		panic("alloc dataset mem is required")
+	}
+
+	if cache == nil {
+		panic("alloc cache mem is required")
+	}
+
+	C.init_full_dataset(dataset, cache, unsafe.Pointer(&seed[0]), C.uint32_t(workerNum))
+}
+
 func GetDatasetMemory(dataset *C.randomx_dataset) unsafe.Pointer {
 	return C.randomx_get_dataset_memory(dataset)
 }
@@ -101,7 +170,7 @@ func ReleaseDataset(dataset *C.randomx_dataset) {
 }
 
 func CreateVM(cache *C.randomx_cache, dataset *C.randomx_dataset, flags ...Flag) *C.randomx_vm {
-	var SumFlag Flag = DEFAULT
+	var SumFlag = FlagDefault
 	for _, flag := range flags {
 		SumFlag = SumFlag | flag
 	}
@@ -140,6 +209,8 @@ func CalculateHash(vm *C.randomx_vm, in []byte) []byte {
 	C.randomx_calculate_hash(vm, unsafe.Pointer(&in[0]), C.size_t(len(in)), unsafe.Pointer(&out[0]))
 	return out
 }
+
+//// Types
 
 type RxCache struct {
 	seed      []byte

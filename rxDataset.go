@@ -26,7 +26,7 @@ func (ds *RxDataset) Close() {
 	ds.rxCache.Close()
 }
 
-func (ds *RxDataset) Init(seed []byte, workerNum uint32) bool {
+func (ds *RxDataset) GoInit(seed []byte, workerNum uint32) bool {
 	if ds.rxCache.Init(seed) == false {
 		log.Println("WARN: rxCache has already been initialized by the same seed")
 	}
@@ -48,6 +48,21 @@ func (ds *RxDataset) Init(seed []byte, workerNum uint32) bool {
 		}()
 	}
 	wg.Wait()
+
+	return true
+}
+
+func (ds *RxDataset) CInit(seed []byte, workerNum uint32) bool {
+	if ds.rxCache.Init(seed) == false {
+		log.Println("WARN: rxCache has already been initialized by the same seed")
+	}
+
+	if ds.rxCache == nil || ds.rxCache.cache == nil {
+		return false
+	}
+
+	FastInitFullDataset(ds.dataset, ds.rxCache.cache, seed, workerNum)
+
 	return true
 }
 

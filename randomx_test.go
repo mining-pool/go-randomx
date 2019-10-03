@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"runtime"
 	"strconv"
+
+	//"math/rand"
+	"runtime"
+	//"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -29,21 +32,21 @@ var testPairs = [][][]byte{
 }
 
 func TestAllocCache(t *testing.T) {
-	cache := AllocCache(DEFAULT)
+	cache := AllocCache(FlagDefault)
 	InitCache(cache, []byte("123"))
 	ReleaseCache(cache)
 }
 
 func TestAllocDataset(t *testing.T) {
-	ds := AllocDataset(DEFAULT)
-	cache := AllocCache(DEFAULT)
+	ds := AllocDataset(FlagDefault)
+	cache := AllocCache(FlagDefault)
 
 	seed := make([]byte, 32)
 	InitCache(cache, seed)
 	log.Println("rxCache initialization finished")
 
 	count := DatasetItemCount()
-	log.Println("dataset count:", count)
+	log.Println("dataset count:", count/1024/1024, "mb")
 	InitDataset(ds, cache, 0, count)
 	log.Println(GetDatasetMemory(ds))
 
@@ -54,13 +57,13 @@ func TestAllocDataset(t *testing.T) {
 func TestCreateVM(t *testing.T) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	var tp = testPairs[1]
-	cache := AllocCache(DEFAULT)
+	cache := AllocCache(FlagDefault)
 	log.Println("alloc cache mem finished")
 	seed := tp[0]
 	InitCache(cache, seed)
 	log.Println("cache initialization finished")
 
-	ds := AllocDataset(DEFAULT)
+	ds := AllocDataset(FlagDefault)
 	log.Println("alloc dataset mem finished")
 	count := DatasetItemCount()
 	log.Println("dataset count:", count)
@@ -77,7 +80,7 @@ func TestCreateVM(t *testing.T) {
 	}
 	wg.Wait()
 	log.Println("dataset initialization finished") // too slow when one thread
-	vm := CreateVM(cache, ds, JIT, HARD_AES, FULL_MEM)
+	vm := CreateVM(cache, ds, FlagJIT, FlagHardAES, FlagFullMEM)
 
 	var hashCorrect = make([]byte, hex.DecodedLen(len(tp[2])))
 	_, err := hex.Decode(hashCorrect, tp[2])
@@ -93,26 +96,25 @@ func TestCreateVM(t *testing.T) {
 func TestNewRxVM(t *testing.T) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	start := time.Now()
-
+	pair := testPairs[1]
 	workerNum := uint32(runtime.NumCPU())
 
-	seed := testPairs[0][0]
+	seed := pair[0]
 	dataset := NewRxDataset()
-	if dataset.Init(seed, workerNum) == false {
+	if dataset.GoInit(seed, workerNum) == false {
 		log.Fatal("failed to init dataset")
 	}
 	//defer dataset.Close()
 	fmt.Println("Finished generating dataset in", time.Since(start).Seconds(), "sec")
 
-	vm := NewRxVM(dataset, FULL_MEM, HARD_AES, JIT, SECURE)
+	vm := NewRxVM(dataset, FlagFullMEM, FlagHardAES, FlagJIT, FlagSecure)
 	//defer vm.Close()
 
-	blob := testPairs[0][1]
-
+	blob := pair[1]
 	hash := vm.CalcHash(blob)
 
-	var hashCorrect = make([]byte, hex.DecodedLen(len(testPairs[0][2])))
-	_, err := hex.Decode(hashCorrect, testPairs[0][2])
+	var hashCorrect = make([]byte, hex.DecodedLen(len(pair[2])))
+	_, err := hex.Decode(hashCorrect, pair[2])
 	if err != nil {
 		log.Println(err)
 	}
@@ -123,16 +125,16 @@ func TestNewRxVM(t *testing.T) {
 	}
 }
 
-// go test -v -bench "." -benchtime=30s
+// go test -v -bench "." -benchtime=30m
 func BenchmarkCalculateHash(b *testing.B) {
-	cache := AllocCache(DEFAULT)
-	ds := AllocDataset(DEFAULT)
+	pair := testPairs[1]
+	cache := AllocCache(FlagDefault)
+	ds := AllocDataset(FlagDefault)
 	InitCache(cache, []byte("123"))
-	InitDataset(ds, cache, 0, 200)
-
-	vm := CreateVM(cache, ds, DEFAULT)
+	FastInitFullDataset(ds, cache, pair[1], uint32(runtime.NumCPU()))
+	vm := CreateVM(cache, ds, FlagDefault)
 	for i := 0; i < b.N; i++ {
-		nonce := strconv.FormatInt(rand.Int63(), 10)
+		nonce := strconv.FormatInt(rand.Int63(), 10) // just test
 		CalculateHash(vm, []byte("123"+nonce))
 	}
 

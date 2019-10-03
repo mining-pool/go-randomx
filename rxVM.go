@@ -1,7 +1,5 @@
 package randomx
 
-import "C"
-
 func NewRxVM(rxDataset *RxDataset, flags ...Flag) *RxVM {
 	vm := CreateVM(rxDataset.rxCache.cache, rxDataset.dataset, flags...)
 	return &RxVM{
