@@ -5,6 +5,9 @@ import "bytes"
 
 func NewRxCache(flags ...Flag) *RxCache {
 	cache := AllocCache(flags...)
+	if cache == nil {
+		panic("failed to alloc mem for cache")
+	}
 
 	return &RxCache{cache: cache}
 }

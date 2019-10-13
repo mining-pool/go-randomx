@@ -61,12 +61,7 @@ func (ds *RxDataset) CInit(seed []byte, workerNum uint32) bool {
 		return false
 	}
 
-	FastInitFullDataset(ds.dataset, ds.rxCache.cache, seed, workerNum)
+	FastInitFullDataset(ds.dataset, ds.rxCache.cache, workerNum)
 
 	return true
-}
-
-// unfinished
-func (ds *RxDataset) HugePages() (uint32, uint32) {
-	return 0, 0
 }

@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"strconv"
-
 	//"math/rand"
 	"runtime"
+	"strconv"
 	//"strconv"
 	"sync"
 	"testing"
@@ -100,7 +99,7 @@ func TestNewRxVM(t *testing.T) {
 	workerNum := uint32(runtime.NumCPU())
 
 	seed := pair[0]
-	dataset := NewRxDataset()
+	dataset := NewRxDataset(FlagJIT)
 	if dataset.GoInit(seed, workerNum) == false {
 		log.Fatal("failed to init dataset")
 	}
@@ -127,11 +126,10 @@ func TestNewRxVM(t *testing.T) {
 
 // go test -v -bench "." -benchtime=30m
 func BenchmarkCalculateHash(b *testing.B) {
-	pair := testPairs[1]
 	cache := AllocCache(FlagDefault)
 	ds := AllocDataset(FlagDefault)
 	InitCache(cache, []byte("123"))
-	FastInitFullDataset(ds, cache, pair[1], uint32(runtime.NumCPU()))
+	FastInitFullDataset(ds, cache, uint32(runtime.NumCPU()))
 	vm := CreateVM(cache, ds, FlagDefault)
 	for i := 0; i < b.N; i++ {
 		nonce := strconv.FormatInt(rand.Int63(), 10) // just test

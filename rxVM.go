@@ -1,6 +1,14 @@
 package randomx
 
 func NewRxVM(rxDataset *RxDataset, flags ...Flag) *RxVM {
+	if rxDataset.rxCache == nil {
+		vm := CreateVM(nil, rxDataset.dataset, flags...)
+		return &RxVM{
+			vm:        vm,
+			rxDataset: nil,
+		}
+	}
+
 	vm := CreateVM(rxDataset.rxCache.cache, rxDataset.dataset, flags...)
 	return &RxVM{
 		vm:        vm,

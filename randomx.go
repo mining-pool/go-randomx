@@ -1,10 +1,5 @@
 package randomx
 
-//go:generate git clone https://github.com/tevador/RandomX RandomX/
-//go:generate # If you wanna using other randomx fork, change the https://github.com/tevador/RandomX to another one like https://github.com/loki-project/loki-randomXL
-//go:generate cmake -G "Unix Makefiles" RandomX/ && make
-//go:generate mv librandomx.a lib
-
 //#cgo CFLAGS: -I./randomx
 //#cgo LDFLAGS: -L${SRCDIR}/lib -lrandomx
 //#cgo LDFLAGS: -lstdc++
@@ -33,7 +28,7 @@ void *init_full_dataset_thread(void *arguments)
 	return NULL;
 }
 
-void init_full_dataset(randomx_dataset *dataset, randomx_cache *cache, void *seed, uint32_t numThreads)
+void init_full_dataset(randomx_dataset *dataset, randomx_cache *cache, uint32_t numThreads)
 {
     const uint64_t datasetItemCount = randomx_dataset_item_count();
 
@@ -50,7 +45,6 @@ void init_full_dataset(randomx_dataset *dataset, randomx_cache *cache, void *see
 		    struct arg_struct *args = malloc(sizeof(struct arg_struct));
 		    args->dataset = dataset;
 		    args->cache = cache;
-			args->seed = seed;
 			args->a = a;
 			args->b = b;
 
@@ -65,7 +59,6 @@ void init_full_dataset(randomx_dataset *dataset, randomx_cache *cache, void *see
         randomx_init_dataset(dataset, cache, 0, datasetItemCount);
     }
 }
-
 */
 import "C"
 import (
@@ -103,12 +96,12 @@ func AllocCache(flags ...Flag) *C.randomx_cache {
 	return cache
 }
 
-func InitCache(cache *C.randomx_cache, key []byte) {
-	if len(key) == 0 {
-		panic("key cannot be NULL")
+func InitCache(cache *C.randomx_cache, seed []byte) {
+	if len(seed) == 0 {
+		panic("seed cannot be NULL")
 	}
 
-	C.randomx_init_cache(cache, unsafe.Pointer(&key[0]), C.size_t(len(key)))
+	C.randomx_init_cache(cache, unsafe.Pointer(&seed[0]), C.size_t(len(seed)))
 }
 
 func ReleaseCache(cache *C.randomx_cache) {
@@ -149,7 +142,7 @@ func InitDataset(dataset *C.randomx_dataset, cache *C.randomx_cache, startItem u
 }
 
 // FastInitFullDataset using c's pthread to boost the dataset init. 472s -> 466s
-func FastInitFullDataset(dataset *C.randomx_dataset, cache *C.randomx_cache, seed []byte, workerNum uint32) {
+func FastInitFullDataset(dataset *C.randomx_dataset, cache *C.randomx_cache, workerNum uint32) {
 	if dataset == nil {
 		panic("alloc dataset mem is required")
 	}
@@ -158,7 +151,7 @@ func FastInitFullDataset(dataset *C.randomx_dataset, cache *C.randomx_cache, see
 		panic("alloc cache mem is required")
 	}
 
-	C.init_full_dataset(dataset, cache, unsafe.Pointer(&seed[0]), C.uint32_t(workerNum))
+	C.init_full_dataset(dataset, cache, C.uint32_t(workerNum))
 }
 
 func GetDatasetMemory(dataset *C.randomx_dataset) unsafe.Pointer {
