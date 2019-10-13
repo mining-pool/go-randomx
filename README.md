@@ -21,7 +21,8 @@ git clone https://github.com/maoxs2/go-randomx
 
 And then run `go generate` to auto compile official random-x code 
 ```bash
-go generate # will clone and compile RandomX source code into librandomx
+# clone and compile RandomX source code into librandomx
+./build random-x # random-x can be replaced with random-xl random-arq random-wow
 ```
 
 Finally you can using the package as your internal one. 
@@ -46,9 +47,10 @@ git clone https://github.com/maoxs2/go-randomx
 
 And then run `go generate` to auto compile official random-x code 
 ```bash
-go generate # will clone and compile RandomX source code into librandomx
+# clone and compile RandomX source code into librandomx
+./build random-x # random-x can be replaced with random-xl random-arq random-wow
 ```
 
 Finally you can using the package as your internal one. 
 
-Directly using it with `import "github.com/MyProject/go-randomx"` and then `randomx.AllocCache()` etc.
+Directly using it with `import "github.com/MyProject/go-randomx"` and then start the functions like `randomx.AllocCache()` etc.
