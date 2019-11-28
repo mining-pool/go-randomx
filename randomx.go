@@ -62,25 +62,30 @@ void init_full_dataset(randomx_dataset *dataset, randomx_cache *cache, uint32_t 
 */
 import "C"
 import (
+	"errors"
+	"sync"
 	"unsafe"
 )
 
 type Flag int
 
 var (
-	FlagDefault    Flag = 0 // for all default
-	FlagLargePages Flag = 1 // for dataset & rxCache
-	FlagHardAES    Flag = 2 // for vm
-	FlagFullMEM    Flag = 4 // for vm
-	FlagJIT        Flag = 8 // for vm
-	FlagSecure     Flag = 16
+	FlagDefault     Flag = 0 // for all default
+	FlagLargePages  Flag = 1 // for dataset & rxCache & vm
+	FlagHardAES     Flag = 2 // for vm
+	FlagFullMEM     Flag = 4 // for vm
+	FlagJIT         Flag = 8 // for vm & cache
+	FlagSecure      Flag = 16
+	FlagArgon2SSSE3 Flag = 32 // for cache
+	FlagArgon2AVX2  Flag = 64 // for cache
+	FlagArgon2      Flag = 96 // = avx2 + sse3
 )
 
 func (f Flag) toC() C.randomx_flags {
 	return (C.randomx_flags)(f)
 }
 
-func AllocCache(flags ...Flag) *C.randomx_cache {
+func AllocCache(flags ...Flag) (*C.randomx_cache, error) {
 	var SumFlag = FlagDefault
 	var cache *C.randomx_cache
 
@@ -90,10 +95,10 @@ func AllocCache(flags ...Flag) *C.randomx_cache {
 
 	cache = C.randomx_alloc_cache(SumFlag.toC())
 	if cache == nil {
-		panic("failed to alloc mem for rxCache")
+		return nil, errors.New("failed to alloc mem for rxCache")
 	}
 
-	return cache
+	return cache, nil
 }
 
 func InitCache(cache *C.randomx_cache, seed []byte) {
@@ -108,7 +113,7 @@ func ReleaseCache(cache *C.randomx_cache) {
 	C.randomx_release_cache(cache)
 }
 
-func AllocDataset(flags ...Flag) *C.randomx_dataset {
+func AllocDataset(flags ...Flag) (*C.randomx_dataset, error) {
 	var SumFlag = FlagDefault
 	for _, flag := range flags {
 		SumFlag = SumFlag | flag
@@ -117,10 +122,10 @@ func AllocDataset(flags ...Flag) *C.randomx_dataset {
 	var dataset *C.randomx_dataset
 	dataset = C.randomx_alloc_dataset(SumFlag.toC())
 	if dataset == nil {
-		panic("failed to alloc mem for dataset")
+		return nil, errors.New("failed to alloc mem for dataset")
 	}
 
-	return dataset
+	return dataset, nil
 }
 
 func DatasetItemCount() uint32 {
@@ -151,7 +156,14 @@ func FastInitFullDataset(dataset *C.randomx_dataset, cache *C.randomx_cache, wor
 		panic("alloc cache mem is required")
 	}
 
-	C.init_full_dataset(dataset, cache, C.uint32_t(workerNum))
+	var wg sync.WaitGroup
+	go func() {
+		wg.Add(1)
+		C.init_full_dataset(dataset, cache, C.uint32_t(workerNum))
+		wg.Done()
+	}()
+
+	wg.Wait()
 }
 
 func GetDatasetMemory(dataset *C.randomx_dataset) unsafe.Pointer {
@@ -162,7 +174,7 @@ func ReleaseDataset(dataset *C.randomx_dataset) {
 	C.randomx_release_dataset(dataset)
 }
 
-func CreateVM(cache *C.randomx_cache, dataset *C.randomx_dataset, flags ...Flag) *C.randomx_vm {
+func CreateVM(cache *C.randomx_cache, dataset *C.randomx_dataset, flags ...Flag) (*C.randomx_vm, error) {
 	var SumFlag = FlagDefault
 	for _, flag := range flags {
 		SumFlag = SumFlag | flag
@@ -175,10 +187,10 @@ func CreateVM(cache *C.randomx_cache, dataset *C.randomx_dataset, flags ...Flag)
 	vm := C.randomx_create_vm(SumFlag.toC(), cache, dataset)
 
 	if vm == nil {
-		panic("failed to create vm")
+		return nil, errors.New("failed to create vm")
 	}
 
-	return vm
+	return vm, nil
 }
 
 func SetVMCache(vm *C.randomx_vm, cache *C.randomx_cache) {

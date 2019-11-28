@@ -11,7 +11,9 @@ void search(randomx_vm* vm, const void* in, const uint64_t target, const uint64_
 		*(uint32_t*)(nonce) = *(uint32_t*)(nonce) + 1;
 		*(uint32_t*)(in+39) = *(uint32_t*)(nonce);
 		randomx_calculate_hash(vm, in, 76, out);
-		if (*(uint64_t*)(out+24) < target) {return;}
+		if (*(uint64_t*)(out+24) < target) {
+			return;
+		}
 	}
 
 	return;

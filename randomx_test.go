@@ -31,14 +31,14 @@ var testPairs = [][][]byte{
 }
 
 func TestAllocCache(t *testing.T) {
-	cache := AllocCache(FlagDefault)
+	cache, _ := AllocCache(FlagDefault)
 	InitCache(cache, []byte("123"))
 	ReleaseCache(cache)
 }
 
 func TestAllocDataset(t *testing.T) {
-	ds := AllocDataset(FlagDefault)
-	cache := AllocCache(FlagDefault)
+	ds, _ := AllocDataset(FlagDefault)
+	cache, _ := AllocCache(FlagDefault)
 
 	seed := make([]byte, 32)
 	InitCache(cache, seed)
@@ -56,13 +56,13 @@ func TestAllocDataset(t *testing.T) {
 func TestCreateVM(t *testing.T) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	var tp = testPairs[1]
-	cache := AllocCache(FlagDefault)
+	cache, _ := AllocCache(FlagDefault)
 	log.Println("alloc cache mem finished")
 	seed := tp[0]
 	InitCache(cache, seed)
 	log.Println("cache initialization finished")
 
-	ds := AllocDataset(FlagDefault)
+	ds, _ := AllocDataset(FlagDefault)
 	log.Println("alloc dataset mem finished")
 	count := DatasetItemCount()
 	log.Println("dataset count:", count)
@@ -79,7 +79,7 @@ func TestCreateVM(t *testing.T) {
 	}
 	wg.Wait()
 	log.Println("dataset initialization finished") // too slow when one thread
-	vm := CreateVM(cache, ds, FlagJIT, FlagHardAES, FlagFullMEM)
+	vm, _ := CreateVM(cache, ds, FlagJIT, FlagHardAES, FlagFullMEM)
 
 	var hashCorrect = make([]byte, hex.DecodedLen(len(tp[2])))
 	_, err := hex.Decode(hashCorrect, tp[2])
@@ -99,14 +99,14 @@ func TestNewRxVM(t *testing.T) {
 	workerNum := uint32(runtime.NumCPU())
 
 	seed := pair[0]
-	dataset := NewRxDataset(FlagJIT)
+	dataset, _ := NewRxDataset(FlagJIT)
 	if dataset.GoInit(seed, workerNum) == false {
 		log.Fatal("failed to init dataset")
 	}
 	//defer dataset.Close()
 	fmt.Println("Finished generating dataset in", time.Since(start).Seconds(), "sec")
 
-	vm := NewRxVM(dataset, FlagFullMEM, FlagHardAES, FlagJIT, FlagSecure)
+	vm, _ := NewRxVM(dataset, FlagFullMEM, FlagHardAES, FlagJIT, FlagSecure)
 	//defer vm.Close()
 
 	blob := pair[1]
@@ -126,11 +126,11 @@ func TestNewRxVM(t *testing.T) {
 
 // go test -v -bench "." -benchtime=30m
 func BenchmarkCalculateHash(b *testing.B) {
-	cache := AllocCache(FlagDefault)
-	ds := AllocDataset(FlagDefault)
+	cache, _ := AllocCache(FlagDefault)
+	ds, _ := AllocDataset(FlagDefault)
 	InitCache(cache, []byte("123"))
 	FastInitFullDataset(ds, cache, uint32(runtime.NumCPU()))
-	vm := CreateVM(cache, ds, FlagDefault)
+	vm, _ := CreateVM(cache, ds, FlagDefault)
 	for i := 0; i < b.N; i++ {
 		nonce := strconv.FormatInt(rand.Int63(), 10) // just test
 		CalculateHash(vm, []byte("123"+nonce))

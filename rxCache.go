@@ -1,15 +1,17 @@
 package randomx
 
 import "C"
-import "bytes"
+import (
+	"bytes"
+)
 
-func NewRxCache(flags ...Flag) *RxCache {
-	cache := AllocCache(flags...)
+func NewRxCache(flags ...Flag) (*RxCache, error) {
+	cache, err := AllocCache(flags...)
 	if cache == nil {
-		panic("failed to alloc mem for cache")
+		return nil, err
 	}
 
-	return &RxCache{cache: cache}
+	return &RxCache{cache: cache}, nil
 }
 
 func (c *RxCache) Close() {

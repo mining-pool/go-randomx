@@ -1,5 +1,18 @@
 # go-randomx
 
+**WARNING: this is not a lib, but a binding**
+
+Do NOT use go mod import this
+
+## Algorithms
+
+- random-x
+- random-xl
+- random-wow
+- random-arq
+- random-yada
+- ...
+
 ## Build
 
 ### Windows
@@ -19,7 +32,7 @@ cd MyProject
 git clone https://github.com/maoxs2/go-randomx
 ```
 
-And then run `go generate` to auto compile official random-x code 
+And then run `./build.sh` to auto compile official random-x code 
 ```bash
 # clone and compile RandomX source code into librandomx
 ./build random-x # random-x can be replaced with random-xl random-arq random-wow
@@ -34,18 +47,21 @@ Directly using it with `import "github.com/MyProject/go-randomx"` and then `rand
 Take Ubuntu for example 
 
 Download the latest go from [here](https://golang.org/dl/) and then install it following [this instruction](https://golang.org/doc/install#tarball)
+
 ```bash
 sudo apt update && sudo apt upgrade 
 sudo apt install git cmake make gcc build-essential
 ```
 
 Secondly clone this repo to your project folder
+
 ```
 cd MyProject
 git clone https://github.com/maoxs2/go-randomx
 ```
 
-And then run `go generate` to auto compile official random-x code 
+And then run `go generate` to auto compile official random-x code
+
 ```bash
 # clone and compile RandomX source code into librandomx
 ./build random-x # random-x can be replaced with random-xl random-arq random-wow
@@ -53,4 +69,8 @@ And then run `go generate` to auto compile official random-x code
 
 Finally you can using the package as your internal one. 
 
-Directly using it with `import "github.com/MyProject/go-randomx"` and then start the functions like `randomx.AllocCache()` etc.
+Directly using it with `import "github.com/myname/my-project/go-randomx"` and then start the functions like `randomx.AllocCache()` etc.
+
+## More
+
+If you have any better solution, tell me please.

@@ -2,20 +2,27 @@ package randomx
 
 import "C"
 import (
-	"log"
+	"fmt"
 	"sync"
 )
 
-func NewRxDataset(flags ...Flag) *RxDataset {
-	cache := NewRxCache(flags...)
-	dataset := AllocDataset(flags...)
+func NewRxDataset(flags ...Flag) (*RxDataset, error) {
+	cache, err := NewRxCache(flags...)
+	if err != nil {
+		return nil, err
+	}
+
+	dataset, err := AllocDataset(flags...)
+	if err != nil {
+		return nil, err
+	}
 
 	return &RxDataset{
 		dataset: dataset,
 		rxCache: cache,
 
 		workerNum: 1,
-	}
+	}, nil
 }
 
 func (ds *RxDataset) Close() {
@@ -28,7 +35,7 @@ func (ds *RxDataset) Close() {
 
 func (ds *RxDataset) GoInit(seed []byte, workerNum uint32) bool {
 	if ds.rxCache.Init(seed) == false {
-		log.Println("WARN: rxCache has already been initialized by the same seed")
+		fmt.Println("WARN: rxCache has already been initialized by the same seed")
 	}
 
 	if ds.rxCache == nil || ds.rxCache.cache == nil {
@@ -54,7 +61,7 @@ func (ds *RxDataset) GoInit(seed []byte, workerNum uint32) bool {
 
 func (ds *RxDataset) CInit(seed []byte, workerNum uint32) bool {
 	if ds.rxCache.Init(seed) == false {
-		log.Println("WARN: rxCache has already been initialized by the same seed")
+		fmt.Println("WARN: rxCache has already been initialized by the same seed")
 	}
 
 	if ds.rxCache == nil || ds.rxCache.cache == nil {

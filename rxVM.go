@@ -1,19 +1,19 @@
 package randomx
 
-func NewRxVM(rxDataset *RxDataset, flags ...Flag) *RxVM {
+func NewRxVM(rxDataset *RxDataset, flags ...Flag) (*RxVM, error) {
 	if rxDataset.rxCache == nil {
-		vm := CreateVM(nil, rxDataset.dataset, flags...)
+		vm, err := CreateVM(nil, rxDataset.dataset, flags...)
 		return &RxVM{
 			vm:        vm,
 			rxDataset: nil,
-		}
+		}, err
 	}
 
-	vm := CreateVM(rxDataset.rxCache.cache, rxDataset.dataset, flags...)
+	vm, err := CreateVM(rxDataset.rxCache.cache, rxDataset.dataset, flags...)
 	return &RxVM{
 		vm:        vm,
 		rxDataset: nil,
-	}
+	}, err
 }
 
 func (vm *RxVM) Close() {
