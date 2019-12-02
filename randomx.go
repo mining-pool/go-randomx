@@ -215,6 +215,23 @@ func CalculateHash(vm *C.randomx_vm, in []byte) []byte {
 	return out
 }
 
+func CalculateHashFirst(vm *C.randomx_vm, in []byte) {
+	if vm == nil {
+		panic("failed hashing: using empty vm")
+	}
+	C.randomx_calculate_hash_first(vm, unsafe.Pointer(&in[0]), C.size_t(len(in)))
+}
+
+func CalculateHashNext(vm *C.randomx_vm, in []byte) []byte {
+	out := make([]byte, C.RANDOMX_HASH_SIZE)
+	if vm == nil {
+		panic("failed hashing: using empty vm")
+	}
+
+	C.randomx_calculate_hash_next(vm, unsafe.Pointer(&in[0]), C.size_t(len(in)), unsafe.Pointer(&out[0]))
+	return out
+}
+
 //// Types
 
 type RxCache struct {

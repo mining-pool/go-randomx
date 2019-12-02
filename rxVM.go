@@ -8,7 +8,6 @@ func NewRxVM(rxDataset *RxDataset, flags ...Flag) (*RxVM, error) {
 			rxDataset: nil,
 		}, err
 	}
-
 	vm, err := CreateVM(rxDataset.rxCache.cache, rxDataset.dataset, flags...)
 	return &RxVM{
 		vm:        vm,
@@ -24,6 +23,14 @@ func (vm *RxVM) Close() {
 
 func (vm *RxVM) CalcHash(in []byte) []byte {
 	return CalculateHash(vm.vm, in)
+}
+
+func (vm *RxVM) CalcHashFirst(in []byte) {
+	CalculateHashFirst(vm.vm, in)
+}
+
+func (vm *RxVM) CalcHashNext(in []byte) []byte {
+	return CalculateHashNext(vm.vm, in)
 }
 
 func (vm *RxVM) UpdateDataset(rxDataset *RxDataset) {

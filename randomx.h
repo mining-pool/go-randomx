@@ -1,6 +1,8 @@
 /*
 Copyright (c) 2018-2019, tevador <tevador@gmail.com>
+
 All rights reserved.
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 	* Redistributions of source code must retain the above copyright
@@ -11,6 +13,7 @@ modification, are permitted provided that the following conditions are met:
 	* Neither the name of the copyright holder nor the
 	  names of its contributors may be used to endorse or promote products
 	  derived from this software without specific prior written permission.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -80,6 +83,7 @@ extern "C" {
  *            RANDOMX_FLAG_FULL_MEM
  *            RANDOMX_FLAG_SECURE
  *         These flags must be added manually if desired.
+ *         On OpenBSD RANDOMX_FLAG_SECURE is enabled by default in JIT mode as W^X is enforced by the OS.
  */
 RANDOMX_EXPORT randomx_flags randomx_get_flags(void);
 
@@ -233,6 +237,22 @@ RANDOMX_EXPORT void randomx_destroy_vm(randomx_vm *machine);
  *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
 */
 RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output);
+
+/**
+ * Paired functions used to calculate multiple RandomX hashes more efficiently.
+ * randomx_calculate_hash_first is called for the first input value.
+ * randomx_calculate_hash_next will output the hash value of the previous input.
+ *
+ * @param machine is a pointer to a randomx_vm structure. Must not be NULL.
+ * @param input is a pointer to memory to be hashed. Must not be NULL.
+ * @param inputSize is the number of bytes to be hashed.
+ * @param nextInput is a pointer to memory to be hashed for the next hash. Must not be NULL.
+ * @param nextInputSize is the number of bytes to be hashed for the next hash.
+ * @param output is a pointer to memory where the hash will be stored. Must not
+ *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
+*/
+RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, const void* input, size_t inputSize);
+RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize, void* output);
 
 #if defined(__cplusplus)
 }
