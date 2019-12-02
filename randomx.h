@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define RANDOMX_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #define RANDOMX_HASH_SIZE 32
 #define RANDOMX_DATASET_ITEM_SIZE 64

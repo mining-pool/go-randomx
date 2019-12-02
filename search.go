@@ -2,23 +2,27 @@ package randomx
 
 /*
 #include <stdint.h>
+#include <stdbool.h>
 #include "randomx.h"
 
-void search(randomx_vm* vm, const void* in, const uint64_t target, const uint64_t max_times, const uint32_t jump, void* nonce, void* out, uint64_t* count)
+bool search(randomx_vm* vm, void* in, const uint64_t target, const uint64_t max_times, const uint32_t jump, void* nonce, void* out, void* sol)
 {
-	randomx_calculate_hash_first(vm, in, 76);
+	//randomx_calculate_hash_first(vm, in, 76);
 
-    for ((*count)=0; (*count) < max_times; (*count)++)
+    for (uint64_t i=0; i < max_times; i++)
 	{
-		*(uint32_t*)(nonce) = *(uint32_t*)(nonce) + jump;
-		*(uint32_t*)(in+39) = *(uint32_t*)(nonce);
+		*(uint32_t*)(in+39) = *(uint32_t*)(nonce) + jump;
 		randomx_calculate_hash_next(vm, in, 76, out);
+
+		*(uint32_t*)(sol) = *(uint32_t*)(nonce);
+		*(uint32_t*)(nonce) = *(uint32_t*)(in+39);
+
 		if (*(uint64_t*)(out+24) < target) {
-			return;
+			return true;
 		}
 	}
 
-	return;
+	return false;
 }
 */
 import "C"
@@ -26,18 +30,19 @@ import (
 	"unsafe"
 )
 
-func Search(vm *C.randomx_vm, nonce []byte, maxTimes uint64, jump uint32, target uint64, in []byte) (hash []byte, count uint64) {
-	out := make([]byte, C.RANDOMX_HASH_SIZE)
+func Search(vm *C.randomx_vm, in []byte, target uint64, maxTimes uint64, jump uint32, nonce []byte) (Hash []byte, Found bool, Sol []byte) {
+	hash := make([]byte, C.RANDOMX_HASH_SIZE)
+	sol := make([]byte, 4)
 	if vm == nil {
 		panic("failed hashing: using empty vm")
 	}
 
-	var cCount C.uint64_t
-	C.search(vm, unsafe.Pointer(&in[0]), C.uint64_t(target), C.uint64_t(maxTimes), C.uint32_t(jump), unsafe.Pointer(&nonce[0]), unsafe.Pointer(&out[0]), &cCount)
-	return out, uint64(cCount)
+	var cFound C.bool
+	cFound = C.search(vm, unsafe.Pointer(&in[0]), C.uint64_t(target), C.uint64_t(maxTimes), C.uint32_t(jump), unsafe.Pointer(&nonce[0]), unsafe.Pointer(&hash[0]), unsafe.Pointer(&sol[0]))
+	return hash, bool(cFound), sol
 }
 
-func (vm *RxVM) Search(nonce []byte, maxTimes uint64, jump uint32, target uint64, in []byte) (hash []byte, count uint64) {
-	hash, count = Search(vm.vm, nonce, maxTimes, jump, target, in)
+func (vm *RxVM) Search(in []byte, target uint64, maxTimes uint64, jump uint32, nonce []byte) (hash []byte, found bool, sol []byte) {
+	hash, found, sol = Search(vm.vm, in, target, maxTimes, jump, nonce)
 	return
 }

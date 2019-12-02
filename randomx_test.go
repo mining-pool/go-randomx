@@ -2,6 +2,7 @@ package randomx
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -122,6 +123,58 @@ func TestNewRxVM(t *testing.T) {
 		log.Println(hash)
 		t.Fail()
 	}
+}
+
+func TestCalculateHashFirst(t *testing.T) {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	start := time.Now()
+	pair := testPairs[1]
+	workerNum := uint32(runtime.NumCPU())
+
+	seed := pair[0]
+	dataset, _ := NewRxDataset(FlagJIT)
+	if dataset.GoInit(seed, workerNum) == false {
+		log.Fatal("failed to init dataset")
+	}
+	//defer dataset.Close()
+	fmt.Println("Finished generating dataset in", time.Since(start).Seconds(), "sec")
+	vm, _ := NewRxVM(dataset, FlagFullMEM, FlagHardAES, FlagJIT, FlagSecure)
+	//defer vm.Close()
+
+	targetBlob := make([]byte, 76)
+	targetNonce := make([]byte, 4)
+	binary.LittleEndian.PutUint32(targetNonce, 2333)
+	copy(targetBlob[39:43], targetNonce)
+
+	targetResult := vm.CalcHash(targetBlob)
+
+	var wg sync.WaitGroup
+	for i := 0; i < runtime.NumCPU(); i++ {
+		vm, _ := NewRxVM(dataset, FlagFullMEM, FlagHardAES, FlagJIT, FlagSecure)
+
+		wg.Add(1)
+		blob := make([]byte, 76)
+		vm.CalcHashFirst(blob)
+
+		n := uint32(0)
+		go func() {
+			for {
+				n++
+				nonce := make([]byte, 4)
+				binary.LittleEndian.PutUint32(nonce, n)
+				copy(blob[39:43], nonce)
+				result := vm.CalcHashNext(blob)
+				if bytes.Compare(result, targetResult) == 0 {
+					fmt.Println(n, "found")
+					wg.Done()
+				} else {
+					//fmt.Println(n, "failed")
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
 }
 
 // go test -v -bench "." -benchtime=30m
