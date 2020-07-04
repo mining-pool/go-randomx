@@ -4,6 +4,8 @@
 
 Do NOT use go mod import this
 
+**NOTICE**: For better go.mod experience, like direcly import go-randomx dep through `go get` or `go build`, check the https://github.com/ngchain/RandomX and https://github.com/ngchain/go-randomx and their github actions.
+
 ## Algorithms
 
 - random-x
