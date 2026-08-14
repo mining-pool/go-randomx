@@ -1,78 +1,37 @@
 # go-randomx
 
-**WARNING: this is not a lib, but a binding**
+Go cgo bindings for [RandomX](https://github.com/tevador/RandomX) **v1.2.1** —
+light-mode VMs for pool-side share verification, `randomx_get_flags()` exposure,
+and a batch `Search`.
 
-Do NOT use go mod import this
+## Install
 
-**NOTICE**: For better go.mod experience, like direcly import go-randomx dep through `go get` or `go build`, check the https://github.com/ngchain/RandomX and https://github.com/ngchain/go-randomx and their github actions.
-
-## Algorithms
-
-- random-x
-- random-xl
-- random-wow
-- random-arq
-- random-yada
-- ...
-
-## Build
-
-### Windows
-
-Firstly download and install the msys2, then open and install the following components:
-
-Take msys2's pacman for example
+```go
+import randomx "github.com/mining-pool/go-randomx"
+```
 
 ```bash
-pacman -Syu
-pacman -S git mingw64/mingw-w64-x86_64-go mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-cmake mingw64/mingw-w64-x86_64-make
+go get github.com/mining-pool/go-randomx
+CGO_ENABLED=1 go build   # links the prebuilt static lib for your platform
 ```
 
-Secondly clone this repo to your project folder
-```
-cd MyProject
-git clone https://github.com/maoxs2/go-randomx
-```
+No `build.sh`, no system install, no `replace` directive. The RandomX static lib
+is **prebuilt per platform** and committed under `lib/librandomx_<goos>_<goarch>.a`;
+`randomx.go` links the right one via `#cgo <goos>,<goarch> LDFLAGS` selectors, so
+the library ships inside the module and `go build` just works.
 
-And then run `./build.sh` to auto compile official random-x code 
-```bash
-# clone and compile RandomX source code into librandomx
-./build random-x # random-x can be replaced with random-xl random-arq random-wow
-```
+Supported: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`. (A C++
+toolchain is still required to compile the small cgo glue and link.)
 
-Finally you can using the package as your internal one. 
+## Regenerating the static libs
 
-Directly using it with `import "github.com/MyProject/go-randomx"` and then `randomx.AllocCache()` etc.
+The prebuilt libs are produced by
+[`.github/workflows/build-libs.yml`](.github/workflows/build-libs.yml): it builds
+RandomX v1.2.1 with cmake (portable, no `-march=native`) on a native runner for
+each platform and commits the results. Run it from the Actions tab
+(**workflow_dispatch**) after bumping the RandomX version. To add a platform, add
+a matrix entry and a matching `#cgo` selector in `randomx.go`.
 
-### Linux
+## License
 
-Take Ubuntu for example 
-
-Download the latest go from [here](https://golang.org/dl/) and then install it following [this instruction](https://golang.org/doc/install#tarball)
-
-```bash
-sudo apt update && sudo apt upgrade 
-sudo apt install git cmake make gcc build-essential
-```
-
-Secondly clone this repo to your project folder
-
-```
-cd MyProject
-git clone https://github.com/maoxs2/go-randomx
-```
-
-And then run `go generate` to auto compile official random-x code
-
-```bash
-# clone and compile RandomX source code into librandomx
-./build random-x # random-x can be replaced with random-xl random-arq random-wow
-```
-
-Finally you can using the package as your internal one. 
-
-Directly using it with `import "github.com/myname/my-project/go-randomx"` and then start the functions like `randomx.AllocCache()` etc.
-
-## More
-
-If you have any better solution, tell me please.
+RandomX is BSD-licensed (tevador/RandomX). See [LICENSE](LICENSE).

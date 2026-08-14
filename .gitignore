@@ -1,7 +1,9 @@
+# CMake / local build artifacts
 CMakeFiles
 CMakeCache.txt
-*.exe
-librandomx.a
 *.cmake
 Makefile
-gxminer
+*.exe
+# the generic build.sh output; the committed per-platform libs are librandomx_<goos>_<goarch>.a
+/lib/librandomx.a
+RandomX/

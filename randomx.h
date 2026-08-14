@@ -240,9 +240,13 @@ RANDOMX_EXPORT void randomx_destroy_vm(randomx_vm *machine);
 RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output);
 
 /**
- * Paired functions used to calculate multiple RandomX hashes more efficiently.
- * randomx_calculate_hash_first is called for the first input value.
- * randomx_calculate_hash_next will output the hash value of the previous input.
+ * Set of functions used to calculate multiple RandomX hashes more efficiently.
+ * randomx_calculate_hash_first will begin a hash calculation.
+ * randomx_calculate_hash_next  will output the hash value of the previous input
+ *                              and begin the calculation of the next hash.
+ * randomx_calculate_hash_last  will output the hash value of the previous input.
+ *
+ * WARNING: These functions may alter the floating point rounding mode of the calling thread.
  *
  * @param machine is a pointer to a randomx_vm structure. Must not be NULL.
  * @param input is a pointer to memory to be hashed. Must not be NULL.
@@ -254,6 +258,18 @@ RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *inpu
 */
 RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, const void* input, size_t inputSize);
 RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize, void* output);
+RANDOMX_EXPORT void randomx_calculate_hash_last(randomx_vm* machine, void* output);
+
+/**
+ * Calculate a RandomX commitment from a RandomX hash and its input.
+ *
+ * @param input is a pointer to memory that was hashed. Must not be NULL.
+ * @param inputSize is the number of bytes in the input.
+ * @param hash_in is the output from randomx_calculate_hash* (RANDOMX_HASH_SIZE bytes).
+ * @param com_out is a pointer to memory where the commitment will be stored. Must not
+ *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
+*/
+RANDOMX_EXPORT void randomx_calculate_commitment(const void* input, size_t inputSize, const void* hash_in, void* com_out);
 
 #if defined(__cplusplus)
 }

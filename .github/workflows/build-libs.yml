@@ -1,0 +1,55 @@
+name: build-libs
+# Cross-builds the RandomX static lib for each supported platform and commits it
+# under lib/librandomx_<goos>_<goarch>.a, so `go get` + `go build` links directly
+# (no build.sh, no system install). Run via the Actions tab (workflow_dispatch)
+# or by pushing a change to this file.
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/build-libs.yml']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-latest,    goos: linux,  goarch: amd64 }
+          - { runner: ubuntu-24.04-arm, goos: linux,  goarch: arm64 }
+          - { runner: macos-13,         goos: darwin, goarch: amd64 }
+          - { runner: macos-14,         goos: darwin, goarch: arm64 }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: install cmake (linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake build-essential git
+      - name: build librandomx.a (portable, no -march=native)
+        run: |
+          git clone --depth 1 --branch v1.2.1 https://github.com/tevador/RandomX
+          cmake -S RandomX -B RandomX/build
+          cmake --build RandomX/build --target randomx -j 2
+          mkdir -p lib
+          cp RandomX/build/librandomx.a "lib/librandomx_${{ matrix.goos }}_${{ matrix.goarch }}.a"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lib-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: lib/librandomx_${{ matrix.goos }}_${{ matrix.goarch }}.a
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: dl, pattern: lib-*, merge-multiple: true }
+      - name: commit prebuilt libs
+        run: |
+          mkdir -p lib && cp dl/*.a lib/
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lib/*.a
+          git commit -m "ci: prebuilt librandomx.a for linux/darwin amd64+arm64" || { echo "no changes"; exit 0; }
+          git push

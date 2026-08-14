@@ -1,9 +1,15 @@
+// Package randomx binds RandomX v1.2.1 (tevador/RandomX): updated randomx.h,
+// per-OS link flags (macOS does not support -static), light-mode VMs for
+// pool-side share verification, and randomx_get_flags() exposure. Build
+// lib/librandomx.a with build.sh (or `cmake .. && make` in a RandomX v1.2.1
+// checkout).
 package randomx
 
-//#cgo CFLAGS: -I./randomx
-//#cgo LDFLAGS: -L${SRCDIR}/lib -lrandomx
-//#cgo LDFLAGS: -lstdc++
-//#cgo LDFLAGS: -static -static-libgcc -static-libstdc++ -lpthread
+//#cgo CFLAGS: -I${SRCDIR}
+//#cgo linux,amd64  LDFLAGS: ${SRCDIR}/lib/librandomx_linux_amd64.a  -static-libgcc -static-libstdc++ -lstdc++ -lpthread -lm
+//#cgo linux,arm64  LDFLAGS: ${SRCDIR}/lib/librandomx_linux_arm64.a  -static-libgcc -static-libstdc++ -lstdc++ -lpthread -lm
+//#cgo darwin,amd64 LDFLAGS: ${SRCDIR}/lib/librandomx_darwin_amd64.a -lc++ -lm
+//#cgo darwin,arm64 LDFLAGS: ${SRCDIR}/lib/librandomx_darwin_arm64.a -lc++ -lm
 /*
 #include "randomx.h"
 #include <time.h>
@@ -83,6 +89,13 @@ var (
 
 func (f Flag) toC() C.randomx_flags {
 	return (C.randomx_flags)(f)
+}
+
+// GetFlags returns the recommended flags for the current machine (JIT,
+// hardware AES, argon2 SIMD) as detected by randomx_get_flags(). Use these for
+// cache and VM creation unless you have a reason not to.
+func GetFlags() Flag {
+	return Flag(C.randomx_get_flags())
 }
 
 func AllocCache(flags ...Flag) (*C.randomx_cache, error) {
@@ -180,8 +193,14 @@ func CreateVM(cache *C.randomx_cache, dataset *C.randomx_dataset, flags ...Flag)
 		SumFlag = SumFlag | flag
 	}
 
-	if dataset == nil {
-		panic("failed creating vm: using empty dataset")
+	// A nil dataset is VALID for light-mode (verification) VMs: the RandomX C
+	// API only requires a dataset when RANDOMX_FLAG_FULL_MEM is set. The old
+	// unconditional panic made pool-side share verification impossible.
+	if dataset == nil && SumFlag&FlagFullMEM != 0 {
+		return nil, errors.New("FlagFullMEM requires an initialized dataset")
+	}
+	if cache == nil && SumFlag&FlagFullMEM == 0 {
+		return nil, errors.New("light-mode vm requires an initialized cache")
 	}
 
 	vm := C.randomx_create_vm(SumFlag.toC(), cache, dataset)

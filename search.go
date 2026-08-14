@@ -11,13 +11,13 @@ bool search(randomx_vm* vm, void* in, const uint64_t target, const uint64_t max_
 
     for (uint64_t i=0; i < max_times; i++)
 	{
-		*(uint32_t*)(in+39) = *(uint32_t*)(nonce) + jump;
+		*(uint32_t*)((uint8_t*)in+39) = *(uint32_t*)(nonce) + jump;
 		randomx_calculate_hash_next(vm, in, 76, out);
 
 		*(uint32_t*)(sol) = *(uint32_t*)(nonce);
-		*(uint32_t*)(nonce) = *(uint32_t*)(in+39);
+		*(uint32_t*)(nonce) = *(uint32_t*)((uint8_t*)in+39);
 
-		if (*(uint64_t*)(out+24) < target) {
+		if (*(uint64_t*)((uint8_t*)out+24) < target) {
 			return true;
 		}
 	}
